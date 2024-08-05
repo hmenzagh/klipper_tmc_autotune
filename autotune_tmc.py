@@ -1,7 +1,6 @@
 import math, logging, os
 from enum import Enum
 from inspect import signature
-from . import tmc
 
 # Autotune config parameters
 TUNING_GOAL = 'auto'
@@ -49,6 +48,15 @@ VHIGHCHM = False # Even though we are fullstepping, we want SpreadCycle control
 TRINAMIC_DRIVERS = ["tmc2130", "tmc2208", "tmc2209", "tmc2240", "tmc2660", "tmc5160"]
 
 AUTO_PERFORMANCE_MOTORS = {'stepper_x', 'stepper_y', 'stepper_x1', 'stepper_y1', 'stepper_a', 'stepper_b', 'stepper_c'}
+
+# Helper for calculating TSTEP based values from velocity
+def TMCtstepHelper(step_dist, mres, tmc_freq, velocity):
+    if velocity > 0.:
+        step_dist_256 = step_dist / (1 << mres)
+        threshold = int(tmc_freq * step_dist_256 / velocity + .5)
+        return max(0, min(0xfffff, threshold))
+    else:
+        return 0xfffff
 
 class TuningGoal(str, Enum):
     AUTO = "auto" # This is the default: automatically choose SILENT for Z and PERFORMANCE for X/Y
@@ -246,7 +254,10 @@ class AutotuneTMC:
         # Just bail if the field doesn't exist.
         if register is None:
             return
-        arg = tmc.TMCtstepHelper(tmco.mcu_tmc, velocity,
+        # arg = tmc.TMCtstepHelper(tmco.mcu_tmc, velocity,
+        #                          pstepper=self.tmc_cmdhelper.stepper)
+        # arg = TMCtstepHelper(step_dist, mres, self.fclk, velocity)
+        arg = TMCtstepHelper(tmco.mcu_tmc, velocity,
                                  pstepper=self.tmc_cmdhelper.stepper)
         logging.info("autotune_tmc set %s %s=%s(%s)",
                      self.name, field, repr(arg), repr(velocity))
@@ -260,7 +271,8 @@ class AutotuneTMC:
             return
         step_dist = self.tmc_cmdhelper.stepper.get_step_dist()
         mres = tmco.fields.get_field("mres")
-        arg = tmc.TMCtstepHelper(step_dist, mres, self.fclk, velocity)
+        # arg = tmc.TMCtstepHelper(step_dist, mres, self.fclk, velocity)
+        arg = TMCtstepHelper(step_dist, mres, self.fclk, velocity)
         logging.info("autotune_tmc set %s %s=%s(%s)",
                      self.name, field, repr(arg), repr(velocity))
         tmco.fields.set_field(field, arg)
