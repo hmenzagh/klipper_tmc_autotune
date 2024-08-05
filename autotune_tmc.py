@@ -97,10 +97,10 @@ class AutotuneTMC:
                 "Could not find any TMC driver config section for '%s' required by TMC autotuning"
                 % (self.name))
         # TMCtstepHelper may have two signatures, let's pick an implementation
-        if 'pstepper' in signature(tmc.TMCtstepHelper).parameters:
-            self._set_driver_velocity_field = self._set_driver_velocity_field_new
-        else:
-            self._set_driver_velocity_field = self._set_driver_velocity_field_old
+        # if 'pstepper' in signature(tmc.TMCtstepHelper).parameters:
+        #     self._set_driver_velocity_field = self._set_driver_velocity_field_new
+        # else:
+        self._set_driver_velocity_field = self._set_driver_velocity_field_old
         # AutotuneTMC config parameters
         self.motor = config.get('motor')
         self.motor_name = "motor_constants " + self.motor
